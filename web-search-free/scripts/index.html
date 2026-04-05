@@ -1,0 +1,114 @@
+<!--
+@license
+MIT License - see LICENSE in repository root
+==============================================================================
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Search Free</title>
+  </head>
+  <body>
+    <script>
+      /**
+       * Searches DuckDuckGo via corsproxy.io (free, no API key required).
+       * Scrapes the DuckDuckGo Lite HTML page and extracts results.
+       * @param {string} query - The search query.
+       */
+      async function searchDuckDuckGo(query) {
+        const ddgUrl =
+          "https://lite.duckduckgo.com/lite/?q=" + encodeURIComponent(query);
+        const proxyUrl =
+          "https://corsproxy.io/?" + encodeURIComponent(ddgUrl);
+
+        const response = await fetch(proxyUrl);
+        if (!response.ok) {
+          throw new Error("Request failed with status " + response.status);
+        }
+
+        const html = await response.text();
+
+        // Parse the HTML using DOMParser
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        // DuckDuckGo Lite results: links are in <a class="result-link">
+        // Snippets are in the following <td class="result-snippet">
+        const results = [];
+        const links = doc.querySelectorAll("a.result-link");
+
+        links.forEach((link) => {
+          if (results.length >= 5) return;
+          const title = link.textContent.trim();
+          const url = link.href;
+
+          // Walk up to the row, then find the snippet in the next relevant cell
+          let snippet = "";
+          const row = link.closest("tr");
+          if (row) {
+            const nextRows = [];
+            let sibling = row.nextElementSibling;
+            for (let i = 0; i < 3 && sibling; i++) {
+              nextRows.push(sibling);
+              sibling = sibling.nextElementSibling;
+            }
+            for (const r of nextRows) {
+              const snippetCell = r.querySelector(".result-snippet");
+              if (snippetCell) {
+                snippet = snippetCell.textContent.trim();
+                break;
+              }
+            }
+          }
+
+          if (title && url) {
+            results.push({ title, url, snippet });
+          }
+        });
+
+        if (results.length === 0) {
+          return {
+            note: "No results found for query: " + query,
+            searchURL: "https://duckduckgo.com/?q=" + encodeURIComponent(query),
+          };
+        }
+
+        // Build readable result string
+        let resultText = "";
+        results.forEach((r, i) => {
+          resultText += `${i + 1}. ${r.title}\n`;
+          if (r.snippet) resultText += `   ${r.snippet}\n`;
+          resultText += `   ${r.url}\n\n`;
+        });
+
+        // Cap at 5000 chars to save context
+        if (resultText.length > 5000) {
+          resultText =
+            resultText.substring(0, 5000) + "\n\n... [TRUNCATED TO SAVE CONTEXT]";
+        }
+
+        return {
+          query: query,
+          result: resultText,
+          searchURL: "https://duckduckgo.com/?q=" + encodeURIComponent(query),
+        };
+      }
+
+      window["ai_edge_gallery_get_result"] = async (data) => {
+        try {
+          const jsonData = JSON.parse(data);
+          if (!jsonData.query) {
+            return JSON.stringify({ error: "No query provided." });
+          }
+          const searchResponse = await searchDuckDuckGo(jsonData.query);
+          return JSON.stringify(searchResponse);
+        } catch (e) {
+          console.error(e);
+          return JSON.stringify({ error: "Search failed: " + e.message });
+        }
+      };
+    </script>
+  </body>
+</html>
