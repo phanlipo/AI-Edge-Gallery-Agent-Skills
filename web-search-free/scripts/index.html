@@ -32,15 +32,14 @@ MIT License - see LICENSE in repository root
 
         const data = await response.json();
 
-        const answer         = data.Answer        || "";
-        const abstract       = data.Abstract       || "";
+        const answer = data.Answer || "";
+        const abstract = data.Abstract || "";
         const abstractSource = data.AbstractSource || "";
-        const abstractURL    = data.AbstractURL    || "";
-        const definition     = data.Definition     || "";
-        const definitionURL  = data.DefinitionURL  || "";
-        const heading        = data.Heading        || "";
+        const abstractURL = data.AbstractURL || "";
+        const definition = data.Definition || "";
+        const definitionURL = data.DefinitionURL || "";
+        const heading = data.Heading || "";
 
-        // Collect up to 5 related topics
         const relatedTopics = [];
         if (Array.isArray(data.RelatedTopics)) {
           for (const t of data.RelatedTopics) {
@@ -51,7 +50,6 @@ MIT License - see LICENSE in repository root
           }
         }
 
-        // Build result string
         let result = "";
         if (answer) {
           result += `--- ANSWER ---\n${answer}\n\n`;
@@ -83,7 +81,6 @@ MIT License - see LICENSE in repository root
           };
         }
 
-        // Cap at 5000 chars to save context
         if (result.length > 5000) {
           result = result.substring(0, 5000) + "\n\n... [TRUNCATED TO SAVE CONTEXT]";
         }

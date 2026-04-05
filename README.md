@@ -10,6 +10,7 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 | Skill | Description | Type | API Key? |
 |---|---|---|---|
 | [`web-search-free`](./web-search-free/) | Web search via DuckDuckGo Instant Answer API | JavaScript | ❌ None |
+| [`true-random-dice`](./true-random-dice/) | Roll one or more dice with local JavaScript cryptographic randomness | JavaScript | ❌ None |
 
 > More skills coming soon.
 
@@ -23,7 +24,7 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 2. Go to **Agent Skills → + → Load from URL**
 3. Paste the raw URL of a `SKILL.md` file, e.g.:
    ```
-   https://raw.githubusercontent.com/phanlipo/AI-Edge-Gallery-Agent-Skills/main/web-search-free/
+   https://phanlipo.github.io/AI-Edge-Gallery-Agent-Skills/web-search-free/SKILL.md
    ```
 
 ### Option B – Load from local folder
@@ -35,6 +36,14 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 For the full official guide, see:
 👉 [google-ai-edge/gallery – How to Add Skills](https://github.com/google-ai-edge/gallery/tree/main/skills#how-to-add-skills-in-the-gallery-app)
 
+### ⚠️ Hosting requirement for JS skills
+
+To avoid WebView loading issues, host skill assets on a real web host (for example GitHub Pages or Cloudflare Pages). Standard GitHub repository URLs and `raw.githubusercontent.com` may be served with MIME types that can break JS skill execution in the app.
+
+### Tip for GitHub Pages + `SKILL.md`
+
+GitHub Pages enables Jekyll by default, which can transform Markdown files. Because AI Edge Gallery must fetch the raw `SKILL.md` content, keep a `.nojekyll` file in the repository root so `SKILL.md` is served as-is.
+
 ---
 
 ## 📁 Repository Structure
@@ -43,17 +52,25 @@ For the full official guide, see:
 .
 ├── README.md
 ├── web-search-free/          # Free web search (DuckDuckGo)
-│   ├── SKILL.md              # Skill metadata + LLM instructions
+│   ├── SKILL.md
 │   └── scripts/
-│       └── index.html        # JavaScript logic (runs in WebView)
-└── new-skill-name/           # New skills will be added here
+│       └── index.html
+├── true-random-dice/         # Dice rolling with local JS randomness
+│   ├── SKILL.md
+│   └── scripts/
+│       └── index.html
+└── new-skill-name/           # New skills can be added here
     ├── SKILL.md
     └── scripts/
         └── index.html
 ```
 
 Each skill lives in its own folder. The only required file is `SKILL.md`.
-JavaScript skills additionally need `scripts/index.html`.
+JavaScript skills additionally need `scripts/index.html` as the webview entry point for `run_js`.
+
+### 🧭 Skill documentation for maintainers
+
+A practical guide for writing new skills is available in [`SKILL_AUTHORING.md`](./SKILL_AUTHORING.md).
 
 ---
 
