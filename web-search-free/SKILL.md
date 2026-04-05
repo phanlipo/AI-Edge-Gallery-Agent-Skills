@@ -1,11 +1,6 @@
 ---
 name: web-search-free
-description: >
-  Searches the web for free using DuckDuckGo's Instant Answer API — no API key required.
-  Use this skill when the user asks to search the web, look something up, find current
-  information, research a topic, or needs facts beyond the model's training data.
-  Triggers: "search for", "look up", "find information about", "what is", "who is",
-  "latest news about", "current status of".
+description: Searches the web for free using DuckDuckGo's Instant Answer API — no API key required. Use this skill when the user asks to search the web, look something up, find current information, research a topic, or needs facts beyond the model's training data. Trigger with "search for", "look up", "find information about", "what is", "who is", "latest news about", "current status of".
 metadata:
   homepage: https://github.com/phanlipo/AI-Edge-Gallery-Agent-Skills/web-search-free
   version: 1.0.0
