@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Web Search Skill – DuckDuckGo</title>
+</head>
+<body>
+<script>
+/**
+ * Web Search Skill – Free DuckDuckGo Instant Answer API
+ *
+ * Entry point for Google AI Edge Gallery JS skills.
+ * Receives a stringified JSON: { "query": "search term" }
+ * Returns a stringified JSON: { "result": {...} } or { "error": "..." }
+ *
+ * API used: https://api.duckduckgo.com/?q=...&format=json&no_redirect=1&no_html=1
+ * No API key required. Completely free.
+ */
+window.ai_edge_gallery_get_result = async function(data) {
+  try {
+    // Parse input
+    let params;
+    try {
+      params = JSON.parse(data);
+    } catch (e) {
+      return JSON.stringify({ error: "Invalid input: could not parse JSON. Expected { \"query\": \"...\" }" });
+    }
+
+    const query = (params.query || "").trim();
+    if (!query) {
+      return JSON.stringify({ error: "No query provided. Please pass a 'query' field." });
+    }
+
+    // Build DuckDuckGo Instant Answer API URL
+    // no_redirect=1 prevents following !bang redirects
+    // no_html=1 strips HTML tags from results
+    // skip_disambig=1 skips disambiguation pages for cleaner results
+    const apiURL =
+      "https://api.duckduckgo.com/?q=" +
+      encodeURIComponent(query) +
+      "&format=json&no_redirect=1&no_html=1&skip_disambig=1";
+
+    const fallbackURL =
+      "https://duckduckgo.com/?q=" + encodeURIComponent(query);
+
+    let response;
+    try {
+      response = await fetch(apiURL);
+    } catch (fetchErr) {
+      return JSON.stringify({
+        error: "Network error: could not reach DuckDuckGo API. Check internet connection.",
+        searchURL: fallbackURL
+      });
+    }
+
+    if (!response.ok) {
+      return JSON.stringify({
+        error: "DuckDuckGo API returned HTTP " + response.status,
+        searchURL: fallbackURL
+      });
+    }
+
+    let ddgData;
+    try {
+      ddgData = await response.json();
+    } catch (jsonErr) {
+      return JSON.stringify({
+        error: "Could not parse DuckDuckGo API response.",
+        searchURL: fallbackURL
+      });
+    }
+
+    // Extract the most useful fields
+    const answer         = ddgData.Answer        || "";
+    const answerType     = ddgData.AnswerType     || "";
+    const abstract       = ddgData.Abstract       || "";
+    const abstractSource = ddgData.AbstractSource || "";
+    const abstractURL    = ddgData.AbstractURL    || "";
+    const definition     = ddgData.Definition     || "";
+    const definitionSrc  = ddgData.DefinitionSource || "";
+    const definitionURL  = ddgData.DefinitionURL  || "";
+    const image          = ddgData.Image          || "";
+    const heading        = ddgData.Heading        || "";
+
+    // Collect up to 5 related topics (skip nested/category items)
+    const relatedTopics = [];
+    if (Array.isArray(ddgData.RelatedTopics)) {
+      for (const t of ddgData.RelatedTopics) {
+        if (relatedTopics.length >= 5) break;
+        if (t.Text && t.FirstURL) {
+          relatedTopics.push({ title: t.Text, url: t.FirstURL });
+        }
+      }
+    }
+
+    const result = {
+      query,
+      heading,
+      answer,
+      answerType,
+      abstract,
+      abstractSource,
+      abstractURL,
+      definition,
+      definitionSource: definitionSrc,
+      definitionURL,
+      image,
+      relatedTopics,
+      searchURL: fallbackURL
+    };
+
+    // If truly nothing came back, note that clearly
+    if (!answer && !abstract && !definition && relatedTopics.length === 0) {
+      result.note =
+        "No instant answer found for this query. " +
+        "The user can search manually at: " + fallbackURL;
+    }
+
+    return JSON.stringify({ result });
+
+  } catch (unexpectedErr) {
+    return JSON.stringify({
+      error: "Unexpected error: " + (unexpectedErr.message || String(unexpectedErr))
+    });
+  }
+};
+</script>
+</body>
+</html>
