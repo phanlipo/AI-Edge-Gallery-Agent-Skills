@@ -14,5 +14,4 @@ Call the `run_js` tool using `index.html` and a JSON string for `data` with the 
 
 **Constraints:**
 - Always show the list of rolled values and the total.
-- Mention the entropy source from the result (`source`) to clarify that the randomness was generated locally via JavaScript.
 - If the tool returns `error`, apologize briefly and ask whether to retry.
