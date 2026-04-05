@@ -23,7 +23,7 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 2. Go to **Agent Skills → + → Load from URL**
 3. Paste the raw URL of a `SKILL.md` file, e.g.:
    ```
-   https://raw.githubusercontent.com/phanlipo/AI-Edge-Gallery-Agent-Skills/main/web-search-free/SKILL.md
+   https://raw.githubusercontent.com/phanlipo/AI-Edge-Gallery-Agent-Skills/main/web-search-free/
    ```
 
 ### Option B – Load from local folder
