@@ -9,7 +9,7 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 
 | Skill | Description | Type | API Key? |
 |---|---|---|---|
-| [`web-search-free`](./web-search-free/) | Web search via DuckDuckGo Instant Answer API | JavaScript | ❌ None |
+| [`true-random-dice`](./true-random-dice/) | Roll one or more dice with local JavaScript cryptographic randomness | JavaScript | ❌ None |
 
 > More skills coming soon.
 
@@ -23,12 +23,12 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 2. Go to **Agent Skills → + → Load from URL**
 3. Paste the raw URL of a `SKILL.md` file, e.g.:
    ```
-   https://raw.githubusercontent.com/phanlipo/AI-Edge-Gallery-Agent-Skills/main/web-search-free/
+   https://raw.githubusercontent.com/phanlipo/AI-Edge-Gallery-Agent-Skills/main/true-random-dice/SKILL.md
    ```
 
 ### Option B – Load from local folder
 
-1. Copy the skill folder (e.g. `web-search-free/`) onto your device
+1. Copy the skill folder (e.g. `true-random-dice/`) onto your device
 2. In the app: **Agent Skills → + → Load from folder**
 3. Navigate to the skill folder and confirm
 
@@ -42,11 +42,11 @@ For the full official guide, see:
 ```
 .
 ├── README.md
-├── web-search-free/          # Free web search (DuckDuckGo)
-│   ├── SKILL.md              # Skill metadata + LLM instructions
+├── true-random-dice/         # Dice rolling with local JS randomness
+│   ├── SKILL.md
 │   └── scripts/
-│       └── index.html        # JavaScript logic (runs in WebView)
-└── new-skill-name/           # New skills will be added here
+│       └── index.html
+└── new-skill-name/           # New skills can be added here
     ├── SKILL.md
     └── scripts/
         └── index.html
