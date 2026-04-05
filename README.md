@@ -21,10 +21,12 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 
 1. Open **Google AI Edge Gallery** on your device
 2. Go to **Agent Skills → + → Load from URL**
-3. Paste the raw URL of a `SKILL.md` file, e.g.:
+3. Paste the deployed URL of the `SKILL.md` file, e.g.:
    ```
-   https://raw.githubusercontent.com/phanlipo/AI-Edge-Gallery-Agent-Skills/main/true-random-dice/SKILL.md
+   https://phanlipo.github.io/AI-Edge-Gallery-Agent-Skills/true-random-dice/SKILL.md
    ```
+
+> **Important:** For JavaScript skills, host assets on a true web host (e.g., GitHub Pages, Cloudflare Pages). Standard GitHub repo/raw URLs often serve files with incompatible MIME types for WebView script execution.
 
 ### Option B – Load from local folder
 
