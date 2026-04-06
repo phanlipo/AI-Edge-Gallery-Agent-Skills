@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sport Scoreboard Webview</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .card {
+        margin: 10px;
+        background: #111827;
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 12px;
+      }
+      h2 { margin: 0 0 8px; }
+      .score { font-size: 34px; font-weight: 700; margin-bottom: 8px; }
+      .muted { color: #94a3b8; font-size: 12px; }
+      ul { margin: 8px 0 0 18px; }
+      .badge {
+        display: inline-block;
+        margin-bottom: 8px;
+        font-size: 11px;
+        color: #93c5fd;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div id="sport" class="badge"></div>
+      <h2 id="headline">Home vs Away</h2>
+      <div id="scoreline" class="score">0 - 0</div>
+      <div id="meta" class="muted">Status: Scheduled</div>
+      <ul id="details"></ul>
+    </div>
+
+    <script>
+      function safeText(value, fallback) {
+        const text = String(value ?? "").trim();
+        return text || fallback;
+      }
+
+      function parsePayload() {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get("payload");
+        if (!raw) return null;
+        try {
+          return JSON.parse(decodeURIComponent(raw));
+        } catch (_error) {
+          return null;
+        }
+      }
+
+      function render(payload) {
+        if (!payload) return;
+        document.getElementById("sport").textContent = safeText(payload.sport, "sport").toUpperCase();
+        document.getElementById("headline").textContent = safeText(payload.headline, "Home vs Away");
+        document.getElementById("scoreline").textContent = safeText(payload.scoreline, "0 - 0");
+
+        const status = safeText(payload.status, "Scheduled");
+        const clock = safeText(payload.clock, "-");
+        document.getElementById("meta").textContent = clock === "-" ? `Status: ${status}` : `Status: ${status} • Clock: ${clock}`;
+
+        const details = Array.isArray(payload.details) ? payload.details : [];
+        const list = document.getElementById("details");
+        list.innerHTML = "";
+        details.forEach((line) => {
+          const li = document.createElement("li");
+          li.textContent = safeText(line, "-");
+          list.appendChild(li);
+        });
+      }
+
+      render(parsePayload());
+    </script>
+  </body>
+</html>
