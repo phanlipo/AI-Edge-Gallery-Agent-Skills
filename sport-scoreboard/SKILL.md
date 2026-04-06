@@ -7,7 +7,7 @@ description: Build a simple sport scoreboard (football, basketball, tennis, tabl
 
 ## Instructions
 
-Call the `run_js` tool with `scripts/index.html` and pass a JSON string in `data`.
+Call the `run_js` tool using `index.html` and pass a JSON string in `data`.
 
 Required fields:
 - `sport`: `"football" | "basketball" | "tennis" | "table-tennis"`
