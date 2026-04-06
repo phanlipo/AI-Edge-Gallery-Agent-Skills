@@ -10,6 +10,7 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 | Skill | Description | Type | API Key? |
 |---|---|---|---|
 | [`true-random-dice`](./true-random-dice/) | Roll one or more dice with local JavaScript cryptographic randomness | JavaScript | ❌ None |
+| [`weather-forecast`](./weather-forecast/) | Get multi-day weather forecasts for a location via Open-Meteo APIs | JavaScript | ❌ None |
 
 > More skills coming soon.
 
@@ -45,6 +46,10 @@ For the full official guide, see:
 .
 ├── README.md
 ├── true-random-dice/         # Dice rolling with local JS randomness
+│   ├── SKILL.md
+│   └── scripts/
+│       └── index.html
+├── weather-forecast/         # Weather forecast lookup via Open-Meteo
 │   ├── SKILL.md
 │   └── scripts/
 │       └── index.html
