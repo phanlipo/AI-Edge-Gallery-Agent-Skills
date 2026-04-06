@@ -1,0 +1,307 @@
+<!--
+@license
+MIT License - see LICENSE in repository root
+==============================================================================
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sport Scoreboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      }
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .app {
+        max-width: 920px;
+        margin: 0 auto;
+        display: grid;
+        gap: 12px;
+      }
+      .card {
+        border: 1px solid #334155;
+        border-radius: 12px;
+        padding: 12px;
+        background: #111827;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 8px;
+      }
+      label {
+        display: block;
+        font-size: 12px;
+        color: #93c5fd;
+        margin-bottom: 4px;
+      }
+      input, select, textarea, button {
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #334155;
+        background: #0b1220;
+        color: #e2e8f0;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      textarea { min-height: 120px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+      button { cursor: pointer; background: #1d4ed8; border: none; font-weight: 600; }
+      .board h2 { margin: 0 0 8px; }
+      .score { font-size: 34px; font-weight: 700; }
+      .muted { color: #94a3b8; font-size: 12px; }
+      ul { margin: 8px 0 0 16px; }
+      .error { color: #fca5a5; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <div class="card">
+        <h1 style="margin:0 0 10px;">Interactive Sport Scoreboard</h1>
+        <div class="grid">
+          <div>
+            <label for="sport">Sport</label>
+            <select id="sport">
+              <option value="football">Football</option>
+              <option value="basketball">Basketball</option>
+              <option value="tennis">Tennis</option>
+              <option value="table-tennis">Table Tennis</option>
+            </select>
+          </div>
+          <div><label for="home">Home</label><input id="home" value="Home" /></div>
+          <div><label for="away">Away</label><input id="away" value="Away" /></div>
+          <div><label for="status">Status</label><input id="status" value="Live" /></div>
+          <div><label for="clock">Clock</label><input id="clock" value="12:34" /></div>
+        </div>
+        <div style="margin-top:10px;">
+          <label for="scores">Scores (JSON)</label>
+          <textarea id="scores">{
+  "home": 2,
+  "away": 1
+}</textarea>
+        </div>
+        <div class="grid" style="margin-top:10px;">
+          <button id="renderBtn" type="button">Render Scoreboard</button>
+          <button id="presetBtn" type="button">Load Sport Preset</button>
+        </div>
+        <div id="uiError" class="error" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="card board" id="board">
+        <h2>Home vs Away</h2>
+        <div class="score">0 - 0</div>
+        <div class="muted" id="meta">Status: Scheduled</div>
+        <ul id="detailList"></ul>
+      </div>
+
+      <div class="card">
+        <label for="markdownOut">Markdown output</label>
+        <textarea id="markdownOut" readonly></textarea>
+      </div>
+    </div>
+
+    <script>
+      const SPORTS = new Set(["football", "basketball", "tennis", "table-tennis"]);
+
+      function toObject(input) {
+        if (!input || typeof input !== "object" || Array.isArray(input)) {
+          throw new Error("Expected an object payload");
+        }
+        return input;
+      }
+
+      function safeText(value, fallback) {
+        const text = String(value ?? "").trim();
+        return text || fallback;
+      }
+
+      function assertFiniteNumber(value, fieldName) {
+        const n = Number(value);
+        if (!Number.isFinite(n)) {
+          throw new Error(`Invalid number for '${fieldName}'`);
+        }
+        return n;
+      }
+
+      function normalizeFootball(scores) {
+        const home = assertFiniteNumber(scores.home, "scores.home");
+        const away = assertFiniteNumber(scores.away, "scores.away");
+        return { scoreline: `${home} - ${away}`, details: ["Format: goals"] };
+      }
+
+      function normalizeBasketball(scores) {
+        const home = assertFiniteNumber(scores.home, "scores.home");
+        const away = assertFiniteNumber(scores.away, "scores.away");
+        const period = safeText(scores.period, "-");
+        const lines = [`Period: ${period}`];
+        if (Array.isArray(scores.by_period) && scores.by_period.length > 0) {
+          const byPeriod = scores.by_period.map((row, index) => {
+            const label = safeText(row.label, `P${index + 1}`);
+            return `${label}: ${assertFiniteNumber(row.home, `scores.by_period[${index}].home`)}-${assertFiniteNumber(row.away, `scores.by_period[${index}].away`)}`;
+          }).join(" | ");
+          lines.push(`By period: ${byPeriod}`);
+        }
+        return { scoreline: `${home} - ${away}`, details: lines };
+      }
+
+      function normalizeTennis(scores) {
+        if (!Array.isArray(scores.sets) || scores.sets.length === 0) {
+          throw new Error("Tennis requires 'scores.sets' with at least one set");
+        }
+        const setLine = scores.sets.map((setScore, index) => `S${index + 1} ${assertFiniteNumber(setScore.home, `scores.sets[${index}].home`)}-${assertFiniteNumber(setScore.away, `scores.sets[${index}].away`)}`).join(" | ");
+        const games = toObject(scores.games || {});
+        const points = toObject(scores.points || {});
+        return {
+          scoreline: `${assertFiniteNumber(games.home, "scores.games.home")} - ${assertFiniteNumber(games.away, "scores.games.away")}`,
+          details: [`Sets: ${setLine}`, `Points: ${safeText(points.home, "0")}-${safeText(points.away, "0")}`],
+        };
+      }
+
+      function normalizeTableTennis(scores) {
+        if (!Array.isArray(scores.sets) || scores.sets.length === 0) {
+          throw new Error("Table tennis requires 'scores.sets' with at least one set");
+        }
+        const setLine = scores.sets.map((setScore, index) => `Set ${index + 1}: ${assertFiniteNumber(setScore.home, `scores.sets[${index}].home`)}-${assertFiniteNumber(setScore.away, `scores.sets[${index}].away`)}`).join(" | ");
+        const currentSet = Number.isFinite(Number(scores.current_set)) ? Number(scores.current_set) : scores.sets.length;
+        const points = toObject(scores.points || {});
+        return {
+          scoreline: `${assertFiniteNumber(points.home, "scores.points.home")} - ${assertFiniteNumber(points.away, "scores.points.away")}`,
+          details: [`Current set: ${currentSet}`, `Set history: ${setLine}`],
+        };
+      }
+
+      function normalizeBySport(sport, scores) {
+        const scoreObj = toObject(scores);
+        if (sport === "football") return normalizeFootball(scoreObj);
+        if (sport === "basketball") return normalizeBasketball(scoreObj);
+        if (sport === "tennis") return normalizeTennis(scoreObj);
+        return normalizeTableTennis(scoreObj);
+      }
+
+      function buildMarkdown(data) {
+        const lines = [`## ${data.headline}`, `**Score:** ${data.scoreline}`, `**Status:** ${data.status}`];
+        if (data.clock !== "-") lines.push(`**Clock:** ${data.clock}`);
+        if (data.details.length > 0) {
+          lines.push("", "**Details**");
+          data.details.forEach((line) => lines.push(`- ${line}`));
+        }
+        return lines.join("\n");
+      }
+
+      function buildScoreboard(payload) {
+        const sport = safeText(payload.sport, "").toLowerCase();
+        if (!sport) throw new Error("Missing required field: sport");
+        if (!SPORTS.has(sport)) throw new Error("Unsupported sport. Use one of: football, basketball, tennis, table-tennis");
+
+        const home = safeText(payload.home, "Home");
+        const away = safeText(payload.away, "Away");
+        const status = safeText(payload.status, "Scheduled");
+        const clock = safeText(payload.clock, "-");
+        const normalized = normalizeBySport(sport, payload.scores);
+
+        const result = {
+          sport,
+          home,
+          away,
+          status,
+          clock,
+          headline: `${home} vs ${away}`,
+          scoreline: normalized.scoreline,
+          details: normalized.details,
+        };
+
+        return { ...result, markdown: buildMarkdown(result) };
+      }
+
+      function getPresetScores(sport) {
+        if (sport === "football") return { home: 2, away: 1 };
+        if (sport === "basketball") return { home: 92, away: 88, period: "Q4", by_period: [{ label: "Q1", home: 20, away: 18 }, { label: "Q2", home: 21, away: 23 }] };
+        if (sport === "tennis") return { sets: [{ home: 6, away: 4 }, { home: 3, away: 6 }], games: { home: 2, away: 1 }, points: { home: "30", away: "15" } };
+        return { sets: [{ home: 11, away: 9 }, { home: 8, away: 11 }], current_set: 3, points: { home: 6, away: 4 } };
+      }
+
+      function renderBoard(result) {
+        if (typeof document === "undefined") return;
+        document.querySelector("#board h2").textContent = result.headline;
+        document.querySelector("#board .score").textContent = result.scoreline;
+        document.querySelector("#meta").textContent = result.clock === "-" ? `Status: ${result.status}` : `Status: ${result.status} • Clock: ${result.clock}`;
+
+        const detailList = document.querySelector("#detailList");
+        detailList.innerHTML = "";
+        result.details.forEach((line) => {
+          const li = document.createElement("li");
+          li.textContent = line;
+          detailList.appendChild(li);
+        });
+
+        document.querySelector("#markdownOut").value = result.markdown;
+      }
+
+      function bindUi() {
+        if (typeof document === "undefined") return;
+
+        const sportEl = document.querySelector("#sport");
+        const scoresEl = document.querySelector("#scores");
+        const errorEl = document.querySelector("#uiError");
+
+        document.querySelector("#presetBtn").addEventListener("click", () => {
+          scoresEl.value = JSON.stringify(getPresetScores(sportEl.value), null, 2);
+          errorEl.textContent = "";
+        });
+
+        document.querySelector("#renderBtn").addEventListener("click", () => {
+          try {
+            const payload = {
+              sport: sportEl.value,
+              home: document.querySelector("#home").value,
+              away: document.querySelector("#away").value,
+              status: document.querySelector("#status").value,
+              clock: document.querySelector("#clock").value,
+              scores: JSON.parse(scoresEl.value || "{}"),
+            };
+            const result = buildScoreboard(payload);
+            errorEl.textContent = "";
+            renderBoard(result);
+          } catch (e) {
+            errorEl.textContent = `Error: ${e.message}`;
+          }
+        });
+      }
+
+      if (typeof document !== "undefined") {
+        bindUi();
+        try {
+          const initial = buildScoreboard({
+            sport: "football",
+            home: "Home",
+            away: "Away",
+            status: "Live",
+            clock: "12:34",
+            scores: getPresetScores("football"),
+          });
+          renderBoard(initial);
+        } catch (e) {
+          const errorEl = document.querySelector("#uiError");
+          if (errorEl) errorEl.textContent = `Error: ${e.message}`;
+        }
+      }
+
+      window["ai_edge_gallery_get_result"] = async (data) => {
+        try {
+          const payload = JSON.parse(data || "{}");
+          return JSON.stringify(buildScoreboard(payload));
+        } catch (e) {
+          console.error(e);
+          return JSON.stringify({ error: `Failed to build scoreboard: ${e.message}` });
+        }
+      };
+    </script>
+  </body>
+</html>
