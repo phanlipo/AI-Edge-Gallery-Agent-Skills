@@ -1,0 +1,91 @@
+<!--
+@license
+MIT License - see LICENSE in repository root
+==============================================================================
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Simple Calculator</title>
+  </head>
+  <body>
+    <script>
+
+      function normalizeExpression(expr) {
+        return String(expr || "").trim();
+      }
+
+      function isSafeExpression(expr) {
+        // Allow only digits, decimal points, whitespace, operators, and parentheses.
+        return /^[\d+\-*/().\s]+$/.test(expr);
+      }
+
+      function evaluateExpression(expr) {
+        if (!expr) {
+          throw new Error("Missing required field: expression");
+        }
+
+        if (!isSafeExpression(expr)) {
+          throw new Error("Expression contains unsupported characters");
+        }
+
+        // Evaluate in isolated function scope after strict input validation.
+        const value = Function(`"use strict"; return (${expr});`)();
+
+        if (!Number.isFinite(value)) {
+          throw new Error("Expression did not produce a finite number");
+        }
+
+        return value;
+      }
+
+      function calculateSqrt(input) {
+        const n = Number(input);
+        if (!Number.isFinite(n)) {
+          throw new Error("Invalid sqrt input: expected a finite number");
+        }
+        if (n < 0) {
+          throw new Error("Square root is only supported for non-negative numbers");
+        }
+        return Math.sqrt(n);
+      }
+
+      window["ai_edge_gallery_get_result"] = async (data) => {
+        try {
+          const jsonData = JSON.parse(data || "{}");
+
+          if (jsonData.expression !== undefined) {
+            const expression = normalizeExpression(jsonData.expression);
+            const result = evaluateExpression(expression);
+
+            return JSON.stringify({
+              operation: "expression",
+              input: expression,
+              result,
+            });
+          }
+
+          if (jsonData.sqrt !== undefined) {
+            const input = Number(jsonData.sqrt);
+            const result = calculateSqrt(input);
+
+            return JSON.stringify({
+              operation: "sqrt",
+              input,
+              result,
+            });
+          }
+
+          return JSON.stringify({
+            error: "Missing input: provide either 'expression' or 'sqrt'",
+          });
+        } catch (e) {
+          console.error(e);
+          return JSON.stringify({ error: "Failed to calculate: " + e.message });
+        }
+      };
+    </script>
+  </body>
+</html>
