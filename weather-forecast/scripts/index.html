@@ -1,0 +1,157 @@
+<!--
+@license
+MIT License - see LICENSE in repository root
+==============================================================================
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Forecast</title>
+  </head>
+  <body>
+    <script>
+      function clampInt(value, fallback, min, max) {
+        const n = Number.parseInt(value, 10);
+        if (!Number.isFinite(n)) return fallback;
+        return Math.min(max, Math.max(min, n));
+      }
+
+      async function fetchJson(url) {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: { Accept: "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status} for ${url}`);
+        }
+
+        return response.json();
+      }
+
+      function toAsciiVariant(text) {
+        return text
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/ß/g, "ss")
+          .trim();
+      }
+
+      function uniqueStrings(items) {
+        const seen = new Set();
+        const out = [];
+        for (const item of items) {
+          const value = String(item || "").trim();
+          if (!value) continue;
+          const key = value.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(value);
+        }
+        return out;
+      }
+
+      async function resolveLocation(query) {
+        const variants = uniqueStrings([query, toAsciiVariant(query), query.replace(/[()]/g, " ")]);
+
+        for (const variant of variants) {
+          const geocodeUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
+          geocodeUrl.searchParams.set("name", variant);
+          geocodeUrl.searchParams.set("count", "10");
+          geocodeUrl.searchParams.set("format", "json");
+
+          const geocode = await fetchJson(geocodeUrl.toString());
+          const results = Array.isArray(geocode?.results) ? geocode.results : [];
+          if (results.length > 0) {
+            return results[0];
+          }
+        }
+
+        return null;
+      }
+
+      function mapDailyForecast(daily, count) {
+        const result = [];
+        for (let i = 0; i < count; i++) {
+          result.push({
+            date: daily.time?.[i],
+            temp_max: daily.temperature_2m_max?.[i],
+            temp_min: daily.temperature_2m_min?.[i],
+            precipitation_sum: daily.precipitation_sum?.[i],
+            wind_speed_max: daily.wind_speed_10m_max?.[i],
+            weather_code: daily.weather_code?.[i],
+          });
+        }
+        return result;
+      }
+
+      window["ai_edge_gallery_get_result"] = async (data) => {
+        try {
+          const jsonData = JSON.parse(data || "{}");
+          const location = String(jsonData.location || "").trim();
+          const days = clampInt(jsonData.days, 3, 1, 7);
+          const units = String(jsonData.units || "metric").toLowerCase() === "imperial" ? "imperial" : "metric";
+
+          if (!location) {
+            return JSON.stringify({ error: "Missing required field: location" });
+          }
+
+          const place = await resolveLocation(location);
+
+          if (!place) {
+            return JSON.stringify({
+              error: `Location not found: ${location}. Try a more specific query like "Berlin, Germany".`,
+            });
+          }
+
+          const temperatureUnit = units === "imperial" ? "fahrenheit" : "celsius";
+          const windSpeedUnit = units === "imperial" ? "mph" : "kmh";
+          const precipitationUnit = units === "imperial" ? "inch" : "mm";
+
+          const forecastUrl = new URL("https://api.open-meteo.com/v1/forecast");
+          forecastUrl.searchParams.set("latitude", String(place.latitude));
+          forecastUrl.searchParams.set("longitude", String(place.longitude));
+          forecastUrl.searchParams.set("timezone", "auto");
+          forecastUrl.searchParams.set("forecast_days", String(days));
+          forecastUrl.searchParams.set(
+            "daily",
+            "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max"
+          );
+          forecastUrl.searchParams.set("current", "temperature_2m,relative_humidity_2m,is_day,precipitation,weather_code,wind_speed_10m");
+          forecastUrl.searchParams.set("temperature_unit", temperatureUnit);
+          forecastUrl.searchParams.set("wind_speed_unit", windSpeedUnit);
+          forecastUrl.searchParams.set("precipitation_unit", precipitationUnit);
+
+          const forecast = await fetchJson(forecastUrl.toString());
+
+          const daily = mapDailyForecast(forecast.daily || {}, days);
+
+          return JSON.stringify({
+            location: {
+              query: location,
+              name: place.name,
+              admin1: place.admin1 || "",
+              country: place.country || "",
+              latitude: place.latitude,
+              longitude: place.longitude,
+              timezone: forecast.timezone || place.timezone || "",
+            },
+            units: {
+              system: units,
+              temperature: forecast.daily_units?.temperature_2m_max || (units === "imperial" ? "°F" : "°C"),
+              precipitation: forecast.daily_units?.precipitation_sum || (units === "imperial" ? "in" : "mm"),
+              wind_speed: forecast.daily_units?.wind_speed_10m_max || (units === "imperial" ? "mph" : "km/h"),
+            },
+            current: forecast.current || null,
+            daily,
+          });
+        } catch (e) {
+          console.error(e);
+          return JSON.stringify({ error: "Failed to fetch weather forecast: " + e.message });
+        }
+      };
+    </script>
+  </body>
+</html>
