@@ -31,6 +31,47 @@ MIT License - see LICENSE in repository root
         return response.json();
       }
 
+      function toAsciiVariant(text) {
+        return text
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/ß/g, "ss")
+          .trim();
+      }
+
+      function uniqueStrings(items) {
+        const seen = new Set();
+        const out = [];
+        for (const item of items) {
+          const value = String(item || "").trim();
+          if (!value) continue;
+          const key = value.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          out.push(value);
+        }
+        return out;
+      }
+
+      async function resolveLocation(query) {
+        const variants = uniqueStrings([query, toAsciiVariant(query), query.replace(/[()]/g, " ")]);
+
+        for (const variant of variants) {
+          const geocodeUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
+          geocodeUrl.searchParams.set("name", variant);
+          geocodeUrl.searchParams.set("count", "10");
+          geocodeUrl.searchParams.set("format", "json");
+
+          const geocode = await fetchJson(geocodeUrl.toString());
+          const results = Array.isArray(geocode?.results) ? geocode.results : [];
+          if (results.length > 0) {
+            return results[0];
+          }
+        }
+
+        return null;
+      }
+
       function mapDailyForecast(daily, count) {
         const result = [];
         for (let i = 0; i < count; i++) {
@@ -57,17 +98,12 @@ MIT License - see LICENSE in repository root
             return JSON.stringify({ error: "Missing required field: location" });
           }
 
-          const geocodeUrl = new URL("https://geocoding-api.open-meteo.com/v1/search");
-          geocodeUrl.searchParams.set("name", location);
-          geocodeUrl.searchParams.set("count", "1");
-          geocodeUrl.searchParams.set("language", "en");
-          geocodeUrl.searchParams.set("format", "json");
-
-          const geocode = await fetchJson(geocodeUrl.toString());
-          const place = geocode?.results?.[0];
+          const place = await resolveLocation(location);
 
           if (!place) {
-            return JSON.stringify({ error: `Location not found: ${location}` });
+            return JSON.stringify({
+              error: `Location not found: ${location}. Try a more specific query like "Berlin, Germany".`,
+            });
           }
 
           const temperatureUnit = units === "imperial" ? "fahrenheit" : "celsius";

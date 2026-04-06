@@ -19,4 +19,4 @@ The script returns:
 
 **Response guidance:**
 - Summarize the forecast day-by-day with date, high/low, and precipitation.
-- If `error` is returned, apologize briefly and ask whether to retry with a more specific location.
+- If `error` is returned, apologize briefly and ask whether to retry with a more specific location (e.g., `"Berlin, Germany"`).
