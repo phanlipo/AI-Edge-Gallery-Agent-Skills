@@ -1,0 +1,3 @@
+interface:
+  display_name: "Sport Scoreboard"
+  short_description: "Interactive scoreboards for football, tennis, table tennis, and basketball"
