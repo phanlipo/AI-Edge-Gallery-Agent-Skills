@@ -9,12 +9,6 @@ description: Build and update an interactive scoreboard for football (soccer), t
 
 Call the `run_js` tool using `scripts/index.html` and pass a JSON string in `data`.
 
-The page also contains an interactive UI (similar to featured interactive skills) so users can:
-- switch sport type,
-- load sport-specific presets,
-- edit score JSON,
-- render a visual scoreboard and generated markdown.
-
 ### Input schema
 
 - `sport` (required): one of `"football"`, `"basketball"`, `"tennis"`, `"table-tennis"`
@@ -35,14 +29,19 @@ The page also contains an interactive UI (similar to featured interactive skills
 
 The script returns JSON with:
 
+- `result` (short success text)
 - `sport`, `home`, `away`, `status`, `clock`
 - `headline` (single-line match headline)
 - `scoreline` (main score)
 - `details` (array of sport-specific lines)
 - `markdown` (multi-line formatted scoreboard for direct chat output)
+- `webview` (inline UI rendered by the app), with:
+  - `url` (relative asset path, for example `webview.html?...`)
+  - `aspectRatio` (number)
 
 ## Response guidance
 
-- Render the returned `markdown` directly for best readability.
-- If the user asks for updates, rerun with changed values and show only the refreshed board unless they ask for commentary.
+- Show the returned `markdown` in chat.
+- Keep the response concise because the app also shows the interactive `webview` inline.
+- If the user asks for updates, rerun with changed values and show the refreshed board.
 - If `error` is returned, apologize briefly and ask for the missing or invalid field.

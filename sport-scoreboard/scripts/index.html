@@ -293,10 +293,30 @@ MIT License - see LICENSE in repository root
         }
       }
 
+      function toWebviewUrl(result) {
+        const encoded = encodeURIComponent(JSON.stringify({
+          headline: result.headline,
+          scoreline: result.scoreline,
+          status: result.status,
+          clock: result.clock,
+          details: result.details,
+          sport: result.sport,
+        }));
+        return `webview.html?payload=${encoded}`;
+      }
+
       window["ai_edge_gallery_get_result"] = async (data) => {
         try {
           const payload = JSON.parse(data || "{}");
-          return JSON.stringify(buildScoreboard(payload));
+          const result = buildScoreboard(payload);
+          return JSON.stringify({
+            ...result,
+            result: `Scoreboard ready for ${result.headline}`,
+            webview: {
+              url: toWebviewUrl(result),
+              aspectRatio: 1.6,
+            },
+          });
         } catch (e) {
           console.error(e);
           return JSON.stringify({ error: `Failed to build scoreboard: ${e.message}` });
