@@ -23,4 +23,8 @@ The script returns JSON with:
 
 Response guidance:
 - Show the computed result clearly.
+- Never round or truncate numeric results unless the user explicitly asks for rounding.
+- For division results, preserve decimals exactly as returned by `result`.
+- If the result is non-integer, output it as a decimal number (for example, `(5+(6*2))/3 = 5.666666666666667`).
+- Do not cast the numeric `result` to an integer in the final answer.
 - If `error` is returned, apologize briefly and ask whether to retry with a simpler input.

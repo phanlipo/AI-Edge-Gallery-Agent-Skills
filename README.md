@@ -9,10 +9,9 @@ Each skill extends on-device LLMs (like Gemma 4) with new capabilities — no cl
 
 | Skill | Description | Type | API Key? |
 |---|---|---|---|
+| [`simple-calculator`](./simple-calculator/) | Solve arithmetic expressions and square roots locally with JavaScript | JavaScript | ❌ None |
 | [`true-random-dice`](./true-random-dice/) | Roll one or more dice with local JavaScript cryptographic randomness | JavaScript | ❌ None |
 | [`weather-forecast`](./weather-forecast/) | Get multi-day weather forecasts for a location via Open-Meteo APIs | JavaScript | ❌ None |
-
-> More skills coming soon.
 
 ---
 
@@ -45,6 +44,10 @@ For the full official guide, see:
 ```
 .
 ├── README.md
+├── simple-calculator/         # Local arithmetic (+, -, *, /) and square roots
+│   ├── SKILL.md
+│   └── scripts/
+│       └── index.html
 ├── true-random-dice/         # Dice rolling with local JS randomness
 │   ├── SKILL.md
 │   └── scripts/
